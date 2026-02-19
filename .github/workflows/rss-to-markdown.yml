@@ -62,10 +62,8 @@ jobs:
               parsed = await parser.parseURL(cleanUrl);
             } catch (parseError) {
               console.error(`Parse error for ${cleanUrl}:`, parseError.message);
-              // 尝试直接获取并手动解析
               const response = await fetch(cleanUrl);
               const xml = await response.text();
-              // 检查返回的是否是HTML错误页面
               if (xml.includes('<html') || xml.includes('<!DOCTYPE')) {
                 throw new Error('Received HTML instead of RSS feed');
               }
@@ -86,7 +84,6 @@ jobs:
             
             if (fs.existsSync(filepath)) {
               existingContent = fs.readFileSync(filepath, 'utf-8');
-              // 提取已有的文章ID (从URL中提取)
               const idMatches = existingContent.match(/article\/(\d+)/g) || [];
               existingIds = new Set(idMatches.map(m => m.split('/').pop()));
             }
@@ -108,7 +105,13 @@ jobs:
             // 构建新内容
             let newContent = '';
             newItems.forEach((item) => {
-              const date = item.pubDate ? new Date(item.pubDate).toLocaleString('zh-CN') : '未知时间';
+              // 转换时区 (UTC -> 北京时间 +8小时)
+              const date = item.pubDate ? (() => {
+                const d = new Date(item.pubDate);
+                d.setHours(d.getHours() + 8);
+                return d.toLocaleString('zh-CN');
+              })() : '未知时间';
+              
               const content = item['content:encoded'] || item.content || item.summary || item.contentSnippet || '';
               
               // 清理HTML标签
@@ -137,11 +140,9 @@ jobs:
             
             // 追加到文件最前面
             if (existingContent) {
-              // 去掉最后的 ---\n\n 和末尾空行
               existingContent = existingContent.replace(/\n---\n\n$/, '');
               newContent += existingContent;
             } else {
-              // 首次创建文件
               newContent = `# ${parsed.title || feed.name}\n\n` + newContent.replace(/\n---\n\n$/, '');
             }
             
