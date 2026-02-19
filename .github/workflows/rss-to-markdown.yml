@@ -38,9 +38,9 @@ jobs:
         // 配置您的RSS源
         const feeds = [
           {
-            url: 'https://rss.injahow.cn/cls/telegraph',  // 替换为您的RSS源
-            name: 'cls',  // 用于文件名前缀
-            maxItems: 20  // 只保留最新20条
+            url: 'https://www.cls.cn/nodeapi/telegraphList',  // 财联社电报
+            name: 'cls_telegraph',
+            maxItems: 20
           }
           // 可以添加更多RSS源
           // { url: 'https://another.com/rss', name: 'source2', maxItems: 20 }
@@ -112,8 +112,8 @@ jobs:
         
     - name: Commit and Push
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
+        git config --local user.email "skinapi@gmail.com"
+        git config --local user.name "skinapi"
         git add ./articles/
         git commit -m "Update RSS articles $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
         git push
