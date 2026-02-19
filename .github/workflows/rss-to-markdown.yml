@@ -1,0 +1,119 @@
+name: RSS to Markdown
+
+on:
+  schedule:
+    # 每6小时运行一次（UTC时间，可根据需要调整）
+    - cron: '0 */6 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Install rss-parser
+      run: npm install rss-parser
+      
+    - name: Fetch RSS and Convert to Markdown
+      run: |
+        node << 'EOF'
+        const RSSParser = require('rss-parser');
+        const fs = require('fs');
+        const path = require('path');
+        
+        const parser = new RSSParser({
+          customFields: {
+            item: ['content:encoded', 'content', 'summary']
+          }
+        });
+        
+        // 配置您的RSS源
+        const feeds = [
+          {
+            url: 'https://rss.injahow.cn/cls/telegraph',  // 替换为您的RSS源
+            name: 'cls',  // 用于文件名前缀
+            maxItems: 20  // 只保留最新20条
+          }
+          // 可以添加更多RSS源
+          // { url: 'https://another.com/rss', name: 'source2', maxItems: 20 }
+        ];
+        
+        const outputDir = './articles';
+        if (!fs.existsSync(outputDir)) {
+          fs.mkdirSync(outputDir, { recursive: true });
+        }
+        
+        async function fetchFeed(feed) {
+          try {
+            console.log(`Fetching: ${feed.url}`);
+            const parsed = await parser.parseURL(feed.url);
+            
+            const items = parsed.items.slice(0, feed.maxItems);
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            
+            let markdown = `# ${parsed.title || 'RSS Feed'}\n\n`;
+            markdown += `**更新时间**: ${new Date().toLocaleString('zh-CN')}\n`;
+            markdown += `**来源**: ${parsed.link || feed.url}\n\n`;
+            markdown += `---\n\n`;
+            
+            items.forEach((item, index) => {
+              const date = item.pubDate ? new Date(item.pubDate).toLocaleString('zh-CN') : '未知时间';
+              const content = item['content:encoded'] || item.content || item.summary || item.contentSnippet || '';
+              
+              // 清理HTML标签（简单处理）
+              const cleanContent = content
+                .replace(/<script[^>]*>.*?<\/script>/gs, '')
+                .replace(/<style[^>]*>.*?<\/style>/gs, '')
+                .replace(/<[^>]+>/g, '\n')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+              
+              markdown += `## ${index + 1}. ${item.title}\n\n`;
+              markdown += `- **发布时间**: ${date}\n`;
+              markdown += `- **原文链接**: [${item.link}](${item.link})\n`;
+              markdown += `- **作者**: ${item.creator || item.author || '未知'}\n\n`;
+              markdown += `${cleanContent}\n\n`;
+              markdown += `---\n\n`;
+            });
+            
+            const filename = `${outputDir}/${feed.name}_${timestamp}.md`;
+            fs.writeFileSync(filename, markdown);
+            console.log(`Saved: ${filename}`);
+            
+            return { name: feed.name, count: items.length };
+          } catch (error) {
+            console.error(`Error fetching ${feed.url}:`, error.message);
+            return { name: feed.name, count: 0, error: error.message };
+          }
+        }
+        
+        async function main() {
+          const results = await Promise.all(feeds.map(fetchFeed));
+          console.log('\n=== 执行结果 ===');
+          results.forEach(r => {
+            if (r.error) {
+              console.log(`❌ ${r.name}: 失败 - ${r.error}`);
+            } else {
+              console.log(`✅ ${r.name}: 成功导出 ${r.count} 条`);
+            }
+          });
+        }
+        
+        main();
+        EOF
+        
+    - name: Commit and Push
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add ./articles/
+        git commit -m "Update RSS articles $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+        git push
