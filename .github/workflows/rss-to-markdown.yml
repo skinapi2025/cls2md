@@ -38,7 +38,7 @@ jobs:
         // 配置您的RSS源
         const feeds = [
           {
-            url: 'https://www.cls.cn/nodeapi/telegraphList',  // 财联社电报
+            url: 'https://rss.injahow.cn/cls/telegraph',  // 财联社电报
             name: 'cls_telegraph',
             maxItems: 20
           }
