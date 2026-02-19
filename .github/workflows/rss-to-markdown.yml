@@ -53,8 +53,29 @@ jobs:
         
         async function fetchFeed(feed) {
           try {
-            console.log(`Fetching: ${feed.url}`);
-            const parsed = await parser.parseURL(feed.url);
+            // 清理URL，去除可能的末尾冒号
+            const cleanUrl = feed.url.replace(/:$/, '');
+            console.log(`Fetching: ${cleanUrl}`);
+            
+            let parsed;
+            try {
+              parsed = await parser.parseURL(cleanUrl);
+            } catch (parseError) {
+              console.error(`Parse error for ${cleanUrl}:`, parseError.message);
+              // 尝试直接获取并手动解析
+              const response = await fetch(cleanUrl);
+              const xml = await response.text();
+              // 检查返回的是否是HTML错误页面
+              if (xml.includes('<html') || xml.includes('<!DOCTYPE')) {
+                throw new Error('Received HTML instead of RSS feed');
+              }
+              parsed = await parser.parseString(xml);
+            }
+            
+            if (!parsed || !parsed.items || parsed.items.length === 0) {
+              console.error(`No items found in ${cleanUrl}`);
+              return { name: feed.name, count: 0, error: 'No items found' };
+            }
             
             const items = parsed.items.slice(0, feed.maxItems);
             
@@ -91,12 +112,15 @@ jobs:
               const content = item['content:encoded'] || item.content || item.summary || item.contentSnippet || '';
               
               // 清理HTML标签
-              const cleanContent = content
+              let cleanContent = content
                 .replace(/<script[^>]*>.*?<\/script>/gs, '')
                 .replace(/<style[^>]*>.*?<\/style>/gs, '')
                 .replace(/<[^>]+>/g, '\n')
                 .replace(/\n{3,}/g, '\n\n')
                 .trim();
+              
+              // 处理CDATA
+              cleanContent = cleanContent.replace(/<!\[CDATA\[/g, '').replace(/\]\]>/g, '');
               
               // 获取分类
               const categories = item.categories ? item.categories.join(', ') : '';
