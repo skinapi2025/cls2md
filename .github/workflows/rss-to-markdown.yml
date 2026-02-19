@@ -57,18 +57,40 @@ jobs:
             const parsed = await parser.parseURL(feed.url);
             
             const items = parsed.items.slice(0, feed.maxItems);
-            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
             
-            let markdown = `# ${parsed.title || 'RSS Feed'}\n\n`;
-            markdown += `**更新时间**: ${new Date().toLocaleString('zh-CN')}\n`;
-            markdown += `**来源**: ${parsed.link || feed.url}\n\n`;
-            markdown += `---\n\n`;
+            // 读取现有文件获取已有的ID
+            const filepath = `${outputDir}/${feed.name}.md`;
+            let existingIds = new Set();
+            let existingContent = '';
             
-            items.forEach((item, index) => {
+            if (fs.existsSync(filepath)) {
+              existingContent = fs.readFileSync(filepath, 'utf-8');
+              // 提取已有的文章ID (从URL中提取)
+              const idMatches = existingContent.match(/article\/(\d+)/g) || [];
+              existingIds = new Set(idMatches.map(m => m.split('/').pop()));
+            }
+            
+            // 过滤掉已存在的文章
+            const newItems = items.filter(item => {
+              const idMatch = item.link.match(/article\/(\d+)/);
+              const id = idMatch ? idMatch[1] : null;
+              return id && !existingIds.has(id);
+            });
+            
+            if (newItems.length === 0) {
+              console.log(`No new items for ${feed.name}`);
+              return { name: feed.name, count: 0 };
+            }
+            
+            console.log(`Found ${newItems.length} new items for ${feed.name}`);
+            
+            // 构建新内容
+            let newContent = '';
+            newItems.forEach((item) => {
               const date = item.pubDate ? new Date(item.pubDate).toLocaleString('zh-CN') : '未知时间';
               const content = item['content:encoded'] || item.content || item.summary || item.contentSnippet || '';
               
-              // 清理HTML标签（简单处理）
+              // 清理HTML标签
               const cleanContent = content
                 .replace(/<script[^>]*>.*?<\/script>/gs, '')
                 .replace(/<style[^>]*>.*?<\/style>/gs, '')
@@ -76,19 +98,33 @@ jobs:
                 .replace(/\n{3,}/g, '\n\n')
                 .trim();
               
-              markdown += `## ${index + 1}. ${item.title}\n\n`;
-              markdown += `- **发布时间**: ${date}\n`;
-              markdown += `- **原文链接**: [${item.link}](${item.link})\n`;
-              markdown += `- **作者**: ${item.creator || item.author || '未知'}\n\n`;
-              markdown += `${cleanContent}\n\n`;
-              markdown += `---\n\n`;
+              // 获取分类
+              const categories = item.categories ? item.categories.join(', ') : '';
+              
+              newContent += `## ${item.title}\n\n`;
+              newContent += `**时间**: ${date}\n`;
+              if (categories) {
+                newContent += `**标签**: ${categories}\n`;
+              }
+              newContent += `\n${cleanContent}\n\n`;
+              newContent += `[原文链接](${item.link})\n\n`;
+              newContent += `---\n\n`;
             });
             
-            const filename = `${outputDir}/${feed.name}_${timestamp}.md`;
-            fs.writeFileSync(filename, markdown);
-            console.log(`Saved: ${filename}`);
+            // 追加到文件最前面
+            if (existingContent) {
+              // 去掉最后的 ---\n\n 和末尾空行
+              existingContent = existingContent.replace(/\n---\n\n$/, '');
+              newContent += existingContent;
+            } else {
+              // 首次创建文件
+              newContent = `# ${parsed.title || feed.name}\n\n` + newContent.replace(/\n---\n\n$/, '');
+            }
             
-            return { name: feed.name, count: items.length };
+            fs.writeFileSync(filepath, newContent);
+            console.log(`Saved: ${filepath} (${newItems.length} new items)`);
+            
+            return { name: feed.name, count: newItems.length };
           } catch (error) {
             console.error(`Error fetching ${feed.url}:`, error.message);
             return { name: feed.name, count: 0, error: error.message };
