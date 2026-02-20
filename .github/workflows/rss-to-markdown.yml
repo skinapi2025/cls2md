@@ -53,7 +53,6 @@ jobs:
         
         async function fetchFeed(feed) {
           try {
-            // 清理URL，去除可能的末尾冒号
             const cleanUrl = feed.url.replace(/:$/, '');
             console.log(`Fetching: ${cleanUrl}`);
             
@@ -77,79 +76,97 @@ jobs:
             
             const items = parsed.items.slice(0, feed.maxItems);
             
-            // 读取现有文件获取已有的ID
-            const filepath = `${outputDir}/${feed.name}.md`;
-            let existingIds = new Set();
-            let existingContent = '';
-            
-            if (fs.existsSync(filepath)) {
-              existingContent = fs.readFileSync(filepath, 'utf-8');
-              const idMatches = existingContent.match(/article\/(\d+)/g) || [];
-              existingIds = new Set(idMatches.map(m => m.split('/').pop()));
-            }
-            
-            // 过滤掉已存在的文章
-            const newItems = items.filter(item => {
-              const idMatch = item.link.match(/article\/(\d+)/);
-              const id = idMatch ? idMatch[1] : null;
-              return id && !existingIds.has(id);
+            // 按日期分组
+            const itemsByDate = {};
+            items.forEach((item) => {
+              // 转换时区并获取日期
+              const d = new Date(item.pubDate);
+              d.setHours(d.getHours() + 8);
+              const dateKey = d.toISOString().slice(0, 10); // YYYY-MM-DD
+              
+              if (!itemsByDate[dateKey]) {
+                itemsByDate[dateKey] = [];
+              }
+              itemsByDate[dateKey].push(item);
             });
             
-            if (newItems.length === 0) {
-              console.log(`No new items for ${feed.name}`);
-              return { name: feed.name, count: 0 };
-            }
+            let totalWritten = 0;
             
-            console.log(`Found ${newItems.length} new items for ${feed.name}`);
-            
-            // 构建新内容
-            let newContent = '';
-            newItems.forEach((item) => {
-              // 转换时区 (UTC -> 北京时间 +8小时)
-              const date = item.pubDate ? (() => {
+            // 处理每个日期的文件
+            for (const [dateKey, dateItems] of Object.entries(itemsByDate)) {
+              const filepath = `${outputDir}/${feed.name}_${dateKey}.md`;
+              
+              // 读取现有文件获取已有的ID
+              let existingIds = new Set();
+              let existingContent = '';
+              
+              if (fs.existsSync(filepath)) {
+                existingContent = fs.readFileSync(filepath, 'utf-8');
+                const idMatches = existingContent.match(/article\/(\d+)/g) || [];
+                existingIds = new Set(idMatches.map(m => m.split('/').pop()));
+              }
+              
+              // 过滤掉已存在的文章
+              const newItems = dateItems.filter(item => {
+                const idMatch = item.link.match(/article\/(\d+)/);
+                const id = idMatch ? idMatch[1] : null;
+                return id && !existingIds.has(id);
+              });
+              
+              if (newItems.length === 0) {
+                console.log(`No new items for ${dateKey}`);
+                continue;
+              }
+              
+              console.log(`Found ${newItems.length} new items for ${dateKey}`);
+              
+              // 构建新内容
+              let newContent = '';
+              newItems.forEach((item) => {
                 const d = new Date(item.pubDate);
                 d.setHours(d.getHours() + 8);
-                return d.toLocaleString('zh-CN');
-              })() : '未知时间';
+                const date = d.toLocaleString('zh-CN');
+                
+                const content = item['content:encoded'] || item.content || item.summary || item.contentSnippet || '';
+                
+                // 清理HTML标签
+                let cleanContent = content
+                  .replace(/<script[^>]*>.*?<\/script>/gs, '')
+                  .replace(/<style[^>]*>.*?<\/style>/gs, '')
+                  .replace(/<[^>]+>/g, '\n')
+                  .replace(/\n{3,}/g, '\n\n')
+                  .trim();
+                
+                // 处理CDATA
+                cleanContent = cleanContent.replace(/<!\[CDATA\[/g, '').replace(/\]\]>/g, '');
+                
+                // 获取分类
+                const categories = item.categories ? item.categories.join(', ') : '';
+                
+                newContent += `## ${item.title}\n\n`;
+                newContent += `**时间**: ${date}\n`;
+                if (categories) {
+                  newContent += `**标签**: ${categories}\n`;
+                }
+                newContent += `\n${cleanContent}\n\n`;
+                newContent += `[原文链接](${item.link})\n\n`;
+                newContent += `---\n\n`;
+              });
               
-              const content = item['content:encoded'] || item.content || item.summary || item.contentSnippet || '';
-              
-              // 清理HTML标签
-              let cleanContent = content
-                .replace(/<script[^>]*>.*?<\/script>/gs, '')
-                .replace(/<style[^>]*>.*?<\/style>/gs, '')
-                .replace(/<[^>]+>/g, '\n')
-                .replace(/\n{3,}/g, '\n\n')
-                .trim();
-              
-              // 处理CDATA
-              cleanContent = cleanContent.replace(/<!\[CDATA\[/g, '').replace(/\]\]>/g, '');
-              
-              // 获取分类
-              const categories = item.categories ? item.categories.join(', ') : '';
-              
-              newContent += `## ${item.title}\n\n`;
-              newContent += `**时间**: ${date}\n`;
-              if (categories) {
-                newContent += `**标签**: ${categories}\n`;
+              // 追加到文件最前面
+              if (existingContent) {
+                existingContent = existingContent.replace(/\n---\n\n$/, '');
+                newContent += existingContent;
+              } else {
+                newContent = `# ${parsed.title || feed.name} - ${dateKey}\n\n` + newContent.replace(/\n---\n\n$/, '');
               }
-              newContent += `\n${cleanContent}\n\n`;
-              newContent += `[原文链接](${item.link})\n\n`;
-              newContent += `---\n\n`;
-            });
-            
-            // 追加到文件最前面
-            if (existingContent) {
-              existingContent = existingContent.replace(/\n---\n\n$/, '');
-              newContent += existingContent;
-            } else {
-              newContent = `# ${parsed.title || feed.name}\n\n` + newContent.replace(/\n---\n\n$/, '');
+              
+              fs.writeFileSync(filepath, newContent);
+              console.log(`Saved: ${filepath} (${newItems.length} new items)`);
+              totalWritten += newItems.length;
             }
             
-            fs.writeFileSync(filepath, newContent);
-            console.log(`Saved: ${filepath} (${newItems.length} new items)`);
-            
-            return { name: feed.name, count: newItems.length };
+            return { name: feed.name, count: totalWritten };
           } catch (error) {
             console.error(`Error fetching ${feed.url}:`, error.message);
             return { name: feed.name, count: 0, error: error.message };
