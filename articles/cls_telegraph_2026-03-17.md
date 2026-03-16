@@ -1,3 +1,47 @@
+## 财联社3月17日电，据报道，美国证券交易委员会（SEC）正准备提案，取消季度报告制度。
+
+**时间**: 2026/3/17 03:57:57
+**标签**: 环球市场情报
+
+财联社3月17日电，据报道，美国证券交易委员会（SEC）正准备提案，取消季度报告制度。
+
+[原文链接](https://api3.cls.cn/share/article/2314833?os=web&sv=8.4.6&app=CailianpressWeb)
+
+---
+
+## 财联社3月17日电，英伟达CEO黄仁勋表示，Feynman架构将采用定制高带宽内存（HBM）。
+
+**时间**: 2026/3/17 03:56:57
+**标签**: 美股动态
+
+财联社3月17日电，英伟达CEO黄仁勋表示，Feynman架构将采用定制高带宽内存（HBM）。
+
+[原文链接](https://api3.cls.cn/share/article/2314832?os=web&sv=8.4.6&app=CailianpressWeb)
+
+---
+
+## 财联社3月17日电，英伟达CEO黄仁勋表示，Groq芯片由三星代工生产；基于Groq芯片的系统将于下半年推出。
+
+**时间**: 2026/3/17 03:53:34
+**标签**: 美股动态, 半导体芯片
+
+财联社3月17日电，英伟达CEO黄仁勋表示，Groq芯片由三星代工生产；基于Groq芯片的系统将于下半年推出。
+
+[原文链接](https://api3.cls.cn/share/article/2314831?os=web&sv=8.4.6&app=CailianpressWeb)
+
+---
+
+## 财联社3月17日电，英伟达CEO黄仁勋展示全新Rubin Ultra系统；Vera Rubin Ultra服务器将搭载 144 颗 GPU。
+
+**时间**: 2026/3/17 03:38:27
+**标签**: 服务器, 美股动态
+
+财联社3月17日电，英伟达CEO黄仁勋展示全新Rubin Ultra系统；Vera Rubin Ultra服务器将搭载 144 颗 GPU。
+
+[原文链接](https://api3.cls.cn/share/article/2314829?os=web&sv=8.4.6&app=CailianpressWeb)
+
+---
+
 ## 财联社3月17日电，英伟达CEO黄仁勋表示，公司已与台积电全面量产用于 Spectrum X 芯片的共封装光学芯片。
 
 **时间**: 2026/3/17 03:36:38
