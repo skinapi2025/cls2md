@@ -1,3 +1,36 @@
+## 财联社5月22日电，特朗普表示，没有人比沃什更适合领导美联储。
+
+**时间**: 2026/5/22 23:55:17
+**标签**: 环球市场情报
+
+财联社5月22日电，特朗普表示，没有人比沃什更适合领导美联储。
+
+[原文链接](https://api3.cls.cn/share/article/2379585?os=web&sv=8.4.6&app=CailianpressWeb)
+
+---
+
+## 财联社5月22日电，据报道，京东考虑斥资20亿英镑竞购在线购物平台The Very Group。
+
+**时间**: 2026/5/22 23:54:06
+**标签**: 中概股情报站
+
+财联社5月22日电，据报道，京东考虑斥资20亿英镑竞购在线购物平台The Very Group。
+
+[原文链接](https://api3.cls.cn/share/article/2379580?os=web&sv=8.4.6&app=CailianpressWeb)
+
+---
+
+## 美股量子计算概念股延续强势 Infeqtion涨近20%
+
+**时间**: 2026/5/22 23:44:21
+**标签**: 美股动态
+
+【美股量子计算概念股延续强势 Infeqtion涨近20%】财联社5月22日电，美股量子计算概念股延续强势，Infeqtion涨近20%，Rigetti Computing涨超19%，Quantum Computing、D-Wave Quantum涨超15%，IonQ涨超8%，IBM涨近3%。
+
+[原文链接](https://api3.cls.cn/share/article/2379569?os=web&sv=8.4.6&app=CailianpressWeb)
+
+---
+
 ## 财联社5月22日电，惠普股价涨幅扩大至15%，创近两年来最大涨幅。
 
 **时间**: 2026/5/22 23:25:08
